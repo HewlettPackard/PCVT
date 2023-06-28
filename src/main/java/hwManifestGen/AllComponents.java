@@ -24,22 +24,32 @@ package hwManifestGen;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.Console;
-//import java.io.File;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+
 //import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.regex.*;
 //import java.util.Random;
 
 import javax.net.ssl.HostnameVerifier;
@@ -134,6 +144,11 @@ public class AllComponents {
 	    Option genHwManifOption = new Option("genhwmanif", "generateHardwareManifest", false, "Select the Hardware Manifest generation, requires as parameters -scl and -o");
 	    genHwManifOption.setRequired(false);
         options.addOption(genHwManifOption);
+        
+		Option fetchoption = new Option("fetCert", "fetchCertificate", false, "Select the Fetch Certificate, requires as parameters -u, -p, -s, -r and -c");
+		fetchoption.setRequired(false);
+		options.addOption(fetchoption);
+    
 
         // Mode: Verify Signed Platform Certificate
 	    Option checkplatcertOption = new Option("checkplatcert", "checkPlatformCertificate", false, "Select the Signed Platform Certificate verification, requires as parameters -hwmanif, -spc, -iakcert, -idevidcert");
@@ -169,6 +184,31 @@ public class AllComponents {
         output.setRequired(false);
         options.addOption(output);
 
+        // I/O parameters for the retrieve Certificate
+		Option usern = new Option("u", "username", true, "Enter the username");
+    	usern.setRequired(false);
+    	options.addOption(usern);
+
+   		Option pass = new Option("p", "password", true, "Enter the password");
+   		pass.setRequired(false);
+    	options.addOption(pass);
+
+   		Option sys = new Option("s", "system", true, "Enter the system name");
+  		sys.setRequired(false);
+   		options.addOption(sys);
+
+   		Option type = new Option("r", "redfishcommandtype", true, "Enter the type of command you want to perform");
+    	type.setRequired(false);
+    	options.addOption(type);
+
+    	Option commnd = new Option("c", "Redfishcommand", true, "Enter the redfish url");
+    	commnd.setRequired(false);
+    	options.addOption(commnd);
+    	
+    	Option path = new Option("oPath", "Outputpath", true, "Enter the output path for storing the certificate");
+    	commnd.setRequired(false);
+    	options.addOption(path);
+    	
         // I/O parameters for the Mode Verify Signed Platform Certificate
         Option signedPlatCert = new Option("spc", "signedPlatCert ", true, "Signed Platform Certificate file");
         signedPlatCert .setRequired(false);
@@ -194,6 +234,276 @@ public class AllComponents {
         altRootCert.setRequired(false);
         options.addOption(altRootCert);
         
+	}
+
+	private static void fetchcertificate(CommandLine cmd) throws Exception {
+	    String username = cmd.getOptionValue("u");  // Get the value of the "u" option from the command line
+	    String password = cmd.getOptionValue("p");  // Get the value of the "p" option from the command line
+	    String system = cmd.getOptionValue("s");    // Get the value of the "s" option from the command line
+	    String type = cmd.getOptionValue("r");      // Get the value of the "r" option from the command line
+	    String command = cmd.getOptionValue("c");   // Get the value of the "c" option from the command line
+	    System.out.println("Username: " + username);  // Print the username
+	    System.out.println("Password: " + password);  // Print the password
+	    System.out.println("System: " + system);      // Print the system
+	    System.out.println("Type: " + type);          // Print the type
+	    System.out.println("Command: " + command);    // Print the command
+
+	    String output = " ";
+	    String csrString = " ";
+	    String urlString = "https://" + system + "/redfish/v1/SessionService/Sessions/";
+
+	    // Disable SSL certificate validation
+	    TrustManager[] trustAllCerts = new TrustManager[] {
+		new X509TrustManager() {
+		    public X509Certificate[] getAcceptedIssuers() {
+		        return null;
+		    }
+		    public void checkClientTrusted(X509Certificate[] certs, String authType) {
+		    }
+		    public void checkServerTrusted(X509Certificate[] certs, String authType) {
+		    }
+		}
+	    };
+
+	    try {
+		SSLContext sc = SSLContext.getInstance("TLS");
+		sc.init(null, trustAllCerts, new java.security.SecureRandom());
+		HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+		HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
+
+		// To fetch the X-auth token
+		URL url1 = new URL(urlString);
+		try {
+			HttpsURLConnection con1 = (HttpsURLConnection) url1.openConnection();
+			con1.setRequestMethod(type); // Set the request method
+			con1.setRequestProperty("Content-Type", "application/json"); // Set the request property
+			con1.setDoOutput(true);
+			String jsonInputString = "{\"UserName\":\"" + username + "\",\"Password\":\"" + password + "\"}";
+			try (OutputStreamWriter out = new OutputStreamWriter(con1.getOutputStream())) {
+		        out.write(jsonInputString); // Write the JSON input string to the output stream
+		    	}	
+            		// Read the input stream from con1 and store the content in content1
+		    	BufferedReader in1 = new BufferedReader(new InputStreamReader(con1.getInputStream()));
+			String inputLine1;
+			StringBuffer content1 = new StringBuffer();
+			while ((inputLine1 = in1.readLine()) != null) {
+			    content1.append(inputLine1);
+			}
+			in1.close();
+
+			// Extract X-Auth-Token from the header of con1
+			String authToken = con1.getHeaderField("X-Auth-Token");
+			System.out.println("X-Auth Token:" + authToken);
+
+			if (type.contains("GET")) {
+			    String urlString2 = "https://" + system + command;
+			// Create URL object
+			URL obj = new URL(urlString2);
+
+			// Create HttpsURLConnection
+			HttpsURLConnection con2 = (HttpsURLConnection) obj.openConnection();
+
+			// Set request method to GET
+			con2.setRequestMethod("GET");
+
+			// Set the X-Auth-Token header
+			con2.setRequestProperty("X-Auth-Token", authToken);
+
+			// Get response code
+			int responseCode = con2.getResponseCode();
+			System.out.println("Response Code: " + responseCode);
+
+			// Read response
+			BufferedReader in = new BufferedReader(new InputStreamReader(con2.getInputStream()));
+			String inputLine;
+			StringBuilder response = new StringBuilder();
+			while ((inputLine = in.readLine()) != null) {
+				response.append(inputLine);
+			}
+			in.close();
+
+			output = response.toString();
+      
+			// Extract the CertificateString
+			String certificateString = "";
+
+			// Find the start index of the CertificateString
+			int startIndex = output.indexOf("CertificateString\":\"") + "CertificateString\":\"".length();
+
+			// Find the end index of the CertificateString
+			int endIndex = output.indexOf("\"", startIndex);
+
+			// Check if valid start and end index are found
+			if (startIndex >= 0 && endIndex >= 0) {
+			    // Extract the CertificateString from the output
+			    certificateString = output.substring(startIndex, endIndex);
+			    
+			    // Replace escape sequence for newline with actual newline character
+			    certificateString = certificateString.replace("\\n", "\n");
+			}
+
+			// Print the extracted CertificateString
+			System.out.println("Certificate String: " + certificateString);
+
+
+			// Set the output file path
+			String file;
+
+			// Check if "path" command option is provided
+			if (cmd.hasOption("path")) {
+			    // Get the value of the "path" command option
+			    String value = cmd.getOptionValue("path");
+			    System.out.println("Value of command option: " + value);
+
+			    // Create the directory if it doesn't exist
+			    File directory = new File(value);
+			    if (!directory.exists()) {
+				boolean created = directory.mkdirs();
+				if (created) {
+				    System.out.println("Directory created: " + value);
+				} else {
+				    System.out.println("Failed to create directory: " + value);
+				}
+			    }
+
+			    // Set the file path to the specified directory with the filename "output2.pem"
+			    file = value + "output2.pem";
+			} else {
+			    System.out.println("Output Path option not provided");
+			    // Set the default output file path
+			    String value = "/home/prerana/Desktop/PCVT/PCVT/src/main/java/hwManifestGen/";
+			    file = value + "output2.pem";
+			}
+
+			try {
+			    // Create a FileWriter to write the certificate to the output file
+			    FileWriter fileWriter = new FileWriter(file);
+			    BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+			    
+			    // Write the certificateString to the output file
+			    bufferedWriter.write(certificateString);
+			    
+			    // Close the BufferedWriter
+			    bufferedWriter.close();
+			    System.out.println("Successfully wrote certificate to output2.pem");
+			} catch (IOException e) {
+			    // Handle any IOException that occurs during file writing
+			    System.out.println("Error writing certificate to output2.pem: " + e.getMessage());
+			}
+   
+			}
+			else {
+			    // Second curl command
+			    String urlString1 = "https://" + system + command;
+			    URL url2 = new URL(urlString1);
+			    HttpsURLConnection con3 = (HttpsURLConnection) url2.openConnection();
+			    con3.setRequestMethod(type);
+			    con3.setRequestProperty("Content-Type", "application/json");
+			    con3.setRequestProperty("x-auth-token", authToken);
+			    con3.setDoOutput(true);
+			    String jsonInputString2 = "{\"CertificateCollection\":{\"@odata.id\":\"/redfish/v1/Managers/RMC/NetworkProtocol/HTTPS/Certificates\"}, \"Country\":\"US\", \"State\":\"California\", \"City\":\"Palo Alto\", \"Organization\":\"Hewlett Packard Enterprise Company\",\"OrganizationalUnit\":\"MCS\", \"CommonName\":\"h2-641-rmc.fchst.rdlabs.hpecorp.ne\"}";
+
+			    // Send JSON input string as request payload
+			    try (OutputStreamWriter out = new OutputStreamWriter(con3.getOutputStream())) {
+				out.write(jsonInputString2);
+			    }
+
+			    // Read the response from the connection
+			    BufferedReader in2 = new BufferedReader(new InputStreamReader(con3.getInputStream()));
+			    String inputLine2;
+			    StringBuffer content2 = new StringBuffer();
+			    while ((inputLine2 = in2.readLine()) != null) {
+				content2.append(inputLine2);
+			    }
+			    in2.close();
+
+			    // Convert the response to a string
+			    output = content2.toString();
+
+			    // Extract the CSRString using a regular expression
+			    Pattern pattern = Pattern.compile("\"CSRString\": \"(.*?)\"");
+			    Matcher matcher = pattern.matcher(output);
+			    if (matcher.find()) {
+				csrString = matcher.group(1);
+
+				// Print the second response line by line
+				String[] lines = csrString.split("\n");
+				for (String line : lines) {
+				    line = line.replaceAll("\\\\n", "\n");
+				    System.out.println("Certificate generated: " + line);
+				}
+
+			    // Store the file path
+				String file;
+
+			// Check if the "path" command option is present
+			if (cmd.hasOption("path")) {
+			    // Get the value of the "path" option
+			    String value = cmd.getOptionValue("path");
+			    System.out.println("Value of command option: " + value);
+
+			    // Create a File object with the specified directory path
+			    File directory = new File(value);
+
+			    // Check if the directory exists
+			    if (!directory.exists()) {
+				// Create the directory if it does not exist
+				boolean created = directory.mkdirs();
+				if (created) {
+				    System.out.println("Directory created: " + value);
+				} else {
+				    System.out.println("Failed to create directory: " + value);
+				}
+			    }
+
+			    // Set the file path as value + "output1.pem"
+			    file = value + "output1.pem";
+			} else {
+			    System.out.println("Output Path option not provided");
+			    // Set a default file path if "path" option is not provided
+			    String value = "/home/prerana/Desktop/PCVT/PCVT/src/main/java/hwManifestGen/";
+			    file = value + "output1.pem";
+			}
+
+			try {
+			    // Create FileWriter object with the specified file path
+			    FileWriter fileWriter = new FileWriter(file);
+
+			    // Create BufferedWriter object with the FileWriter
+			    BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+
+			    // Write the modified csrString to the file
+			    bufferedWriter.write(csrString.replaceAll("\\\\n", "\n"));
+
+			    // Close the BufferedWriter
+			    bufferedWriter.close();
+
+			    System.out.println("Successfully wrote certificate to output1.pem");
+			} catch (IOException e) {
+			    System.out.println("Error writing certificate to output1.pem: " + e.getMessage());
+			}
+			}
+
+		}
+		}
+
+				 
+			catch(Exception e)
+			{
+			    // Exception occurred
+			    System.out.println("While downloading the certificate, error occured: " + e.toString());
+			    
+			    // Check if the exception message contains "401" indicating incorrect credentials
+			    if(e.toString().contains("401"))
+				System.out.println("Credentials entered are incorrect.");
+			    // Check if the exception message contains "java.net.UnknownHostException" indicating unavailability of the system
+			    else if(e.toString().contains("java.net.UnknownHostException"))
+				System.out.println("System is not reachable");
+			}
+			}
+	    catch (MalformedURLException e) {
+	        System.out.println(e.getMessage());
+	    }
 	}
 	
 	private static void generateHardwareManifest(CommandLine cmd) {
@@ -472,7 +782,7 @@ public class AllComponents {
 		}	
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 
 	    Options options = new Options();
 	    setOptions(options);
@@ -492,10 +802,14 @@ public class AllComponents {
             printUsage();
             System.exit(1);
         }
-                
+
         if (cmd.hasOption("genhwmanif")) {
         	generateHardwareManifest(cmd);
         }
+
+        if (cmd.hasOption("fetCert")) {
+        	fetchcertificate(cmd);
+        }  
 
         if (cmd.hasOption("checkplatcert")) {
         	checkPlatformCertificate(cmd, args);
