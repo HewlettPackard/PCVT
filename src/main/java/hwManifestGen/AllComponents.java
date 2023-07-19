@@ -371,7 +371,7 @@ public class AllComponents {
 			} else {
 			    System.out.println("Output Path option not provided");
 			    // Set the default output file path
-			    String value = "/home/prerana/Desktop/PCVT/PCVT/src/main/java/hwManifestGen/";
+			    String value = "/opt/hpe/scl/";
 			    file = value + "output2.pem";
 			}
 
@@ -461,7 +461,7 @@ public class AllComponents {
 			} else {
 			    System.out.println("Output Path option not provided");
 			    // Set a default file path if "path" option is not provided
-			    String value = "/home/prerana/Desktop/PCVT/PCVT/src/main/java/hwManifestGen/";
+			    String value = "/opt/hpe/scl/";
 			    file = value + "output1.pem";
 			}
 
