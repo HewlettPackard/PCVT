@@ -49,7 +49,11 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 //import java.util.Random;
 
 import javax.net.ssl.HostnameVerifier;
@@ -127,125 +131,142 @@ public class AllComponents {
 		
 		System.out.println("		For retrieving the HPE Signed Platform Certificate, ");
 		System.out.println("		the HPE Signed IAK Certificate and the HPE Signed IDevID Certificate please");
+                System.out.println("		fetch certificate using fetchcert option with respective redfish paths or ");
 		System.out.println("		trigger a GET request to the iLO API endpoint ");
 		System.out.println("		https://<iLO IP Address>/redfish/v1/managers/1/diagnostics/");
 		System.out.println("		filtering for the fields PlatformCert, SystemIDevID and SystemIAKCert. ");
 		System.out.println("		The same process can be done through the ilorest tool.");
 		System.out.println("	");
+
+                System.out.println("	To validate individual certs, -validateCerts option can be used it will be");
+		System.out.println("	checked against all the certificates given by the user.");
+		System.out.println("	");
+		System.out.println("		In this case the input option is -validatecerts or --validateCerts");
+		System.out.println("		input can be one or more certs given like host_iakcert,host_idevidcert,. etc");
+                System.out.println("	");
 		
 	}
 	
 	public static void setOptions(Options options) {
-	        // **************************
-		// Functionality mode options 
-			
-		// Mode: Generate the Hardware Manifest
-		Option genHwManifOption = new Option("genhwmanif", "generateHardwareManifest", false, "Select the Hardware Manifest generation, requires as parameters -scl and -o");
-		genHwManifOption.setRequired(false);
-		options.addOption(genHwManifOption);
+		
+	// ************************** 
+	// Functionality mode options 
+	    
+	// Mode: Generate the Hardware Manifest
+	Option genHwManifOption = new Option("genhwmanif", "generateHardwareManifest", false, "Select the Hardware Manifest generation, requires as parameters -scl and -o");
+	genHwManifOption.setRequired(false);
+        options.addOption(genHwManifOption);
 
-		Option fetchoption = new Option("fetchcert", "fetchCertificate", false, "Select the Fetch Certificate, requires as parameters -u, -p, -s, -r and -c");
-		fetchoption.setRequired(false);
-		options.addOption(fetchoption);
+	Option fetchoption = new Option("fetchcert", "fetchCertificate", false, "Select the Fetch Certificate, requires as parameters -u, -p, -s, -r and -c");
+	fetchoption.setRequired(false);
+	options.addOption(fetchoption);
 
-		// Mode: Verify Signed Platform Certificate
-		Option checkplatcertOption = new Option("checkplatcert", "checkPlatformCertificate", false, "Select the Signed Platform Certificate verification, requires as parameters -hwmanif, -spc, -iakcert, -idevidcert");
-		checkplatcertOption.setRequired(false);
-                options.addOption(checkplatcertOption);
+        // Mode: Verify Signed Platform Certificate
+	Option checkplatcertOption = new Option("checkplatcert", "checkPlatformCertificate", false, "Select the Signed Platform Certificate verification, requires as parameters -hwmanif, -spc, -iakcert, -idevidcert");
+	checkplatcertOption.setRequired(false);
+        options.addOption(checkplatcertOption);
 
         
-                // **************************
-                // Parameters for I/O
+        // **************************
+	// Parameters for I/O 
         
-                // I/O parameters for the Mode Generate the Hardware Manifest
-		Option sclinput = new Option("scl", "sclinput", true, "SCL input file originated from /sys/firmware/efi/efivars/HpePlatformCertificate-*");
-                sclinput.setRequired(false);
-                options.addOption(sclinput);
+        // I/O parameters for the Mode Generate the Hardware Manifest
+	Option sclinput = new Option("scl", "sclinput", true, "SCL input file originated from /sys/firmware/efi/efivars/HpePlatformCertificate-*");
+        sclinput.setRequired(false);
+        options.addOption(sclinput);
 
-                Option smbios = new Option("smbios", "SMBIOS", false, "Instructs to use SMBIOS instead of SCL as input");
-                smbios.setRequired(false);
-                options.addOption(smbios);
+        Option smbios = new Option("smbios", "SMBIOS", false, "Instructs to use SMBIOS instead of SCL as input");
+        smbios.setRequired(false);
+        options.addOption(smbios);
 
-                Option paccordir = new Option("paccordir", "paccordirectory", true, "[Feature not yet available] Paccor installation directory, from where its Hardware Manifest can be generated");
-                paccordir.setRequired(false);
-                options.addOption(paccordir);
+        Option paccordir = new Option("paccordir", "paccordirectory", true, "[Feature not yet available] Paccor installation directory, from where its Hardware Manifest can be generated");
+        paccordir.setRequired(false);
+        options.addOption(paccordir);
 
-                Option paccorhwmanif = new Option("paccorhwmanif", "paccorhwmanifest", true, "[Feature not yet available] Generated Paccor Hardware Manifest file, by default named as localhost-componentlist.json");
-                paccorhwmanif.setRequired(false);
-                options.addOption(paccorhwmanif);
+        Option paccorhwmanif = new Option("paccorhwmanif", "paccorhwmanifest", true, "[Feature not yet available] Generated Paccor Hardware Manifest file, by default named as localhost-componentlist.json");
+        paccorhwmanif.setRequired(false);
+        options.addOption(paccorhwmanif);
 		     		    
-                Option decscl = new Option("dscl", "decodedscl", true, "Intermediary output file with the SCL Data decoded in text");
-                decscl.setRequired(false);
-                options.addOption(decscl);
+        Option decscl = new Option("dscl", "decodedscl", true, "Intermediary output file with the SCL Data decoded in text");
+        decscl.setRequired(false);
+        options.addOption(decscl);
 
-                Option output = new Option("o", "output", true, "Output file with the JSON Hardware Manifest");
-                output.setRequired(false);
-                options.addOption(output);
+        Option output = new Option("o", "output", true, "Output file with the JSON Hardware Manifest");
+        output.setRequired(false);
+        options.addOption(output);
 
-                // I/O parameters for the retrieve Certificate
-		Option usern = new Option("username", "username", true, "Enter the username");
-                usern.setRequired(false);
-                options.addOption(usern);
+        // I/O parameters for the retrieve Certificate
+        Option validatecerts = new Option("validatecerts", "validateCerts", true, "The Certificates to be validated, parse 1 or more like host_idevid,rmp_idevid,host_iak,rmp_iak");
+	validatecerts.setRequired(false);
+	options.addOption(validatecerts);
 
-		Option pass = new Option("passwd", "password", true, "Enter the password");
-		pass.setRequired(false);
-        	options.addOption(pass);
+	Option usern = new Option("username", "username", true, "Enter the username");
+    	usern.setRequired(false);
+    	options.addOption(usern);
 
-   		Option sys = new Option("sys", "system", true, "Enter the system name");
-  		sys.setRequired(false);
-   		options.addOption(sys);
+	Option pass = new Option("passwd", "password", true, "Enter the password");
+	pass.setRequired(false);
+    	options.addOption(pass);
 
-                Option commnd = new Option("redfishcmd", "Redfishcommand", true, "Enter the redfish url");
-                commnd.setRequired(false);
-                options.addOption(commnd);
+   	Option sys = new Option("sys", "system", true, "Enter the system name");
+  	sys.setRequired(false);
+   	options.addOption(sys);
 
-                Option path = new Option("outpath", "Outputpath", true, "Enter the output path for storing the certificate");
-                commnd.setRequired(false);
-                options.addOption(path);
+    	Option command = new Option("redfishcmd", "redfishCommand", true, "Enter the redfish url");
+    	command.setRequired(false);
+    	options.addOption(command);
 
-                // I/O parameters for the Mode Verify Signed Platform Certificate
-                Option signedPlatCert = new Option("spc", "signedPlatCert ", true, "Signed Platform Certificate file");
-                signedPlatCert .setRequired(false);
-                options.addOption(signedPlatCert);
-                
-                Option iakCert = new Option("iakcert", "iakCert", true, "IAK Certificate file");
-                iakCert.setRequired(false);
-                options.addOption(iakCert);
+    	Option path = new Option("outpath", "outputPath", true, "Enter the output path for storing the certificate");
+    	path.setRequired(false);
+    	options.addOption(path);
 
-                Option idevidCert = new Option("idevidcert", "idevidCert", true, "IDevID Certificate file");
-                idevidCert.setRequired(false);
-                options.addOption(idevidCert);
+        Option filename = new Option("filename", "fileName", true, "To store the certificate, the file names can be host_idevid, rmp_idevid, host_iak, rmp_iak, etc");
+    	filename.setRequired(false);
+    	options.addOption(filename);
 
-                Option hwManifestInput = new Option("hwmanif", "hwManifest", true, "Input file with the JSON Hardware Manifest from SCL data");
-                hwManifestInput.setRequired(false);
-                options.addOption(hwManifestInput);
-                
-                Option verbose = new Option("v", "verbose", false, "Verbose output to stdout");
-                verbose.setRequired(false);
-                options.addOption(verbose);
+        // I/O parameters for the Mode Verify Signed Platform Certificate
+        Option signedPlatCert = new Option("spc", "signedPlatCert ", true, "Signed Platform Certificate file");
+        signedPlatCert .setRequired(false);
+        options.addOption(signedPlatCert);
+        
+        Option iakCert = new Option("iakcert", "iakCert", true, "IAK Certificate file");
+        iakCert.setRequired(false);
+        options.addOption(iakCert);
 
-                Option altRootCert = new Option("forceRootCA", "forceRootCAcert", true, "Input file with an alternative Root CA Certificate");
-                altRootCert.setRequired(false);
-                options.addOption(altRootCert);
+        Option idevidCert = new Option("idevidcert", "idevidCert", true, "IDevID Certificate file");
+        idevidCert.setRequired(false);
+        options.addOption(idevidCert);
+
+        Option hwManifestInput = new Option("hwmanif", "hwManifest", true, "Input file with the JSON Hardware Manifest from SCL data");
+        hwManifestInput.setRequired(false);
+        options.addOption(hwManifestInput);
+        
+        Option verbose = new Option("v", "verbose", false, "Verbose output to stdout");
+        verbose.setRequired(false);
+        options.addOption(verbose);
+
+        Option altRootCert = new Option("forceRootCA", "forceRootCAcert", true, "Input file with an alternative Root CA Certificate");
+        altRootCert.setRequired(false);
+        options.addOption(altRootCert);
         
 	}
 
 	private static void fetchcertificate(CommandLine cmd) throws Exception {
 		String username = cmd.getOptionValue("username");  // Get the value of the "username" option from the command line
-		String password = cmd.getOptionValue("passwd");    // Get the value of the "passwd" option from the command line
-		String system = cmd.getOptionValue("sys");         // Get the value of the "sys" option from the command line
-		String command = cmd.getOptionValue("redfishcmd"); // Get the value of the "redfishcmd" option from the command line
+	    	String password = cmd.getOptionValue("passwd");    // Get the value of the "passwd" option from the command line
+	    	String system = cmd.getOptionValue("sys");         // Get the value of the "sys" option from the command line
+	    	String command = cmd.getOptionValue("redfishcmd"); // Get the value of the "redfishcmd" option from the command line
 
-		System.out.println("Username: " + username);  // Print the username
-		System.out.println("Password: " + password);  // Print the password
-		System.out.println("System: " + system);      // Print the system
-		System.out.println("Command: " + command);    // Print the command
+	    	System.out.println("Username: " + username);  // Print the username
+	    	System.out.println("Password: " + password);  // Print the password
+	    	System.out.println("System: " + system);      // Print the system
+	    	System.out.println("Command: " + command);    // Print the command
 
-		String output = " ";
-		String urlString = "https://" + system + "/redfish/v1/SessionService/Sessions/";
+	    	String output;
+	    	String urlString = "https://" + system + "/redfish/v1/SessionService/Sessions/";
 
-		// Disable SSL certificate validation
-		TrustManager[] trustAllCerts = new TrustManager[] {
+	    	// Disable SSL certificate validation
+	    	TrustManager[] trustAllCerts = new TrustManager[] {
 			new X509TrustManager() {
 				public X509Certificate[] getAcceptedIssuers() {
 					return null;
@@ -255,7 +276,7 @@ public class AllComponents {
 				public void checkServerTrusted(X509Certificate[] certs, String authType) {
 				}
 			}
-		};
+	    	};
 
 		try {
 			SSLContext sc = SSLContext.getInstance("TLS");
@@ -318,57 +339,77 @@ public class AllComponents {
 				// Extract the CertificateString
 				String certificateString = "";
 
-				// Find the start index of the CertificateString
-				int startIndex = output.indexOf("CertificateString\":\"") + "CertificateString\":\"".length();
+                                // Pattern to match key-value pairs
+                                String patternString = "\"(.*?)\":\\s*\"(.*?)\"";
 
-				// Find the end index of the CertificateString
-				int endIndex = output.indexOf("\"", startIndex);
+                                // Create a Pattern object
+                                Pattern pattern = Pattern.compile(patternString);
 
-				// Check if valid start and end index are found
-				if (startIndex >= 0 && endIndex >= 0) {
-					// Extract the CertificateString from the output
-					certificateString = output.substring(startIndex, endIndex);
+                                // Create a Matcher object
+                                Matcher matcher = pattern.matcher(output);
 
-					// Replace escape sequence for newline with actual newline character
-					certificateString = certificateString.replace("\\n", "\n");
-				}
+                                // Create a Map to hold key-value pairs
+                                Map<String, String> dictionary = new HashMap<>();
 
-				// Print the extracted CertificateString
-				System.out.println("Certificate String: " + certificateString);
+                                // Find and store all key-value pairs
+                                while (matcher.find()) {
+                                        dictionary.put(matcher.group(1), matcher.group(2));
+                                }
 
+                                certificateString = dictionary.get("CertificateString");
+                                
+                                // Replace escape sequence for newline with actual newline character
+				certificateString = certificateString.replace("\\n", "\n");
+
+                                System.out.println("Certificate String: " + certificateString);
+				
 				// Set the output file path
-				String file;
-
+				String filefullpath;
+                                String parentdir = null;
+                                // Set the file path to the specified directory with the filename given by the user
 				// Check if "outpath" command option is provided
 				if (cmd.hasOption("outpath")) {
 					// Get the value of the "outpath" command option
-					String value = cmd.getOptionValue("outpath");
-					System.out.println("Value of command option: " + value);
-
-					// Create the directory if it doesn't exist
-					File directory = new File(value);
-					if (!directory.exists()) {
-						boolean created = directory.mkdirs();
-						if (created) {
-							System.out.println("Directory created: " + value);
-						} else {
-							System.out.println("Failed to create directory: " + value);
-						}
-					}
-
-					// Set the file path to the specified directory with the filename "output2.pem"
-					file = value + "output2.pem";
+					parentdir = cmd.getOptionValue("outpath");
 				} else {
 					System.out.println("Output Path option not provided");
-					// Set the default output file path
-					String value = "/opt/hpe/scl/";
-					file = value + "output2.pem";
-					System.out.println("Chosen Output Path "+file);
+                                        parentdir = "/opt/hpe/scl/";
 				}
 
+                                // Create the directory if it doesn't exist
+                                File directory = new File(parentdir);
+                                if (!directory.exists()) {
+                                        boolean created = directory.mkdirs();
+                                        if (created) {
+                                                System.out.println("Directory created: " + parentdir);
+                                        } else {
+                                                System.out.println("Failed to create directory: " + parentdir);
+                                        }
+                                }
+
+                                String filename = null;
+                                if (cmd.hasOption("filename")){
+                                        filename = cmd.getOptionValue("filename");
+                                        System.out.println("The filename given by the user is " + filename);
+                                } else {
+                                        filename = system + "_cert.pem";
+                                }
+
+                                filefullpath = parentdir + filename;
+                                int number = 1;
+                                String newFileName;
+                                File file = new File(filefullpath);
+                                
+                                while (file.exists()) {
+                                        newFileName = filename + '_' + number;
+                                        filefullpath = parentdir + newFileName;
+                                        file = new File(filefullpath);
+                                        number++;
+                                };
+                                
 				try {
 					// Create a FileWriter to write the certificate to the output file
-					FileWriter fileWriter = new FileWriter(file);
+					FileWriter fileWriter = new FileWriter(filefullpath);
 					BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
 
 					// Write the certificateString to the output file
@@ -376,7 +417,7 @@ public class AllComponents {
 
 					// Close the BufferedWriter
 					bufferedWriter.close();
-					System.out.println("Successfully wrote certificate to output2.pem");
+					System.out.println("Successfully wrote certificate to " + filefullpath);
 				} catch (IOException e) {
 					// Handle any IOException that occurs during file writing
 					System.out.println("Error writing certificate to output2.pem: " + e.getMessage());
@@ -393,10 +434,10 @@ public class AllComponents {
 			    else if(e.toString().contains("java.net.UnknownHostException"))
 					System.out.println("System is not reachable");
 			}
-		}
-		catch (MalformedURLException e) {
-			System.out.println(e.getMessage());
-		}
+	    	}
+	    	catch (MalformedURLException e) {
+	        	System.out.println(e.getMessage());
+	    	}
 	}
 	
 	private static void generateHardwareManifest(CommandLine cmd) {
@@ -675,26 +716,37 @@ public class AllComponents {
 		}	
 	}
 
-	private static void validateIdevID(CommandLine cmd){
-		String idevidCertFile = cmd.getOptionValue("idevidCert"); 
-		
+	private static void validateCertificates(CommandLine cmd){
+		String certificates = cmd.getOptionValue("validatecerts");
+                String altRootCertFile = cmd.getOptionValue("forceRootCA");
+                
+                String[] certs = certificates.split(",");
+                
         	try {
-			System.out.println("Reading IDevID Trust Chain certificates");
-			CertCheck IDevIDCheck;
-			IDevIDCheck = new CertCheck(idevidCertFile);
-	        	boolean idevidCheck = IDevIDCheck.verifyX509Cert();
+			System.out.println("Reading Trust Chain certificates");
+                        boolean certfile = true;
+                        for (String cert : certs) {
+                                CertCheck CertFile;
+                                if (altRootCertFile != null) {
+            	                        CertFile = new CertCheck(cert, altRootCertFile);
+                                } else {
+                                        CertFile = new CertCheck(cert);
+                                }
+                                
+                                certfile = CertFile.verifyX509Cert();
 
-	        	System.out.println("\n **** IDevID Certificate Trust Chain Status: ****"); 
-	        	if(!idevidCheck) {
-            			System.out.println("The IDevID Certificate Chain and signature are INVALID");
-            		} else {
-            			System.out.println("The IDevID Certificate Chain and signature are VALID");
-            		}
-
-	        	// Important return to get the failed status from the PCVT tool. 
-	        	if (idevidCheck == false) {
-		        	System.exit(1);
-		        }
+                                System.out.println("\n **** Certificate Trust Chain Status: ****");
+                                if(!certfile) {
+                                        System.out.println("The Certificate Chain and signature are INVALID for " + cert + '\n');
+                                } else {
+                                        System.out.println("The Certificate Chain and signature are VALID for " + cert + '\n');
+                                }
+                        }
+                        // Important return to get the failed status from the PCVT tool. 
+                        if (certfile == false) {
+                                System.exit(1);
+                        }
+			
 		} catch (Error e) {
 			e.printStackTrace();
 			System.err.println(e.toString());
@@ -737,9 +789,8 @@ public class AllComponents {
         	fetchcertificate(cmd);
         }
 
-	// To Validate idevID alone
-	if (cmd.hasOption("idevidCert") && !cmd.hasOption("checkplatcert")) {
-        	validateIdevID(cmd);
+	if (cmd.hasOption("validatecerts")) {
+        	validateCertificates(cmd);
         }
 
         if (cmd.hasOption("checkplatcert")) {
