@@ -1,120 +1,87 @@
+# Platform Certificate Verification Tool (PCVT):
 
-Platform Certificate Verification Tool (PCVT):
+PCVT allows you to verify that the hardware and platform firmware configuration of your Hewlett Packard Enterprise server has not been modified since leaving the factory.
 
-  This is tool has as objective to enable:
+PCVT performs the following operations:
 
-  1) the verification of the current device's hardware manifest against the Platform 
-    Certificate that HPE issued at its factory. The Platform Certificate is an Attribute
-    Certificate signed by HPE. 
+  1) PCVT verifies the current hardware and relevant firmware configuration of the server
+     against the information encoded in the Platform Certificate that HPE issued at its factory.
+     The Platform Certificate is an X.509 Attribute Certificate signed by HPE.
 
-  2) the certificates signature verification against the intermediate certificate that 
-    signed the Platform Certificate, System IDevID Certificate, System IAK Certificate.
+  2) PCVT cryptographically verifies the validity of the HPE-issued system certificates:
+    Platform Certificate, System IDevID Certificate and System IAK Certificate, and their
+    trust chains.
 
-  3) the certificates trustchain verification, verifying the chain from the signed 
-    certificate up to the HPE Root CA certificate.
+## PCVT delivery options
+The PCVT is available as a bootable ISO image. The PCVT ISO is available on the 'Releases' section of this GitHub repository.
+
+## PCVT documentation
+For more information on PCVT and its operation, please refer to the User Guide document that accompanies the ISO image for each release.
+
+## PCVT usage:
+Follow the steps in this section to run PCVT using a bootable ISO:
+
+1. Download the PCVT bootable ISO from the 'Releases' section of this GitHub repository.
+
+2. Verify the hash digest of the downloaded ISO image against the corresponding hash digest value provided for each release.
+
+```
+NOTICE
+To prevent changes to the HPE server that you plan to test, HPE recommends that you download the bootable ISO from a different computer.
+```
+
+3. Configure the HPE server to boot to the ISO image:
+ - If you downloaded the bootable ISO image on another computer, transfer the ISO image to the HPE server such as by using iLO virtual drive or a USB flash drive.
+ - Configure the HPE server to boot to the ISO image using iLO.
+
+4. Boot the ISO image and run PCVT:
+ - Boot the HPE server to the ISO image. After the Linux operating system on the ISO image loads, PCVT runs automatically.
+
+```If iLO requires authentication, a user prompt will be displayed for iLO account credentials. Please provide the username and password for an iLO account configured on the server to allow the tool to discover the current hardware and firmware configuration of the server. If running PCVT on a newly-unboxed server, the default iLO credentials will be provided with the server packaging.
+```
+
+Below you can find sample output from a successful execution of PCVT:
 
 
+      localhost login: root (automatic login)
+      Have a lot of fun ...
+      Setting up PCVT environment .. .
+      iLO requires authentication - please provide iLO account credentials:
+      Username:
+      Password:
+      Reading Platform Certificate
+      Reading System IAK Certificate
+      Reading System IDevID Certificate
+      Reading IDevID Certificate
 
-PCVT compilation:
+      Discovering current platform state ..
+      RedFish version: 1.13.0
+      Ignoring device: Embedded Video Controller
+      Final inventory:
+      Type:00010002/ Manuf.:Intel(R) Corporation/ Model:Intel(R) Xeon(R) Gold 6442Y/ SN:-/ Rev.:8/ FRU:true
+      Type:00130003/ Manuf.:HPE/ Model:U63/ SN:-/ Rev.:1.40/ FRU:false
+      Type:00040009/ Manuf.:STMicro/ Model:TPM2_0/ SN:-/ Rev.:1.512/ FRU:false
+      Type:00050012/ Manuf.:HPE/ Model:iLO 6/ SN:-/ Rev.:1.55/ FRU:false
+      Type:00070002/ Manuf.:NOT SPECIFIED/ Model:MK000960GXAXB/ SN:[Redacted]/ Rev.:HPG1/ FRU:true
+      Type:00070002/ Manuf.:NOT SPECIFIED/ Model:MK000960GXAXB/ SN:[Redacted]/ Rev.:HPG1/ FRU:true
+      Type:0006001D/ Manuf.:Hynix/ Model:HMCG94AEBRA123N/ SN:[Redacted]/ Rev.:-/ FRU:true
+      Type:0006001D/ Manuf.:Hynix/ Model:HMCG94AEBRA123N/ SN:[Redacted]/ Rev.:-/ FRU:true
+      Type:00090002/ Manuf.:Intel Corporation/ Model:K53978-005/ SN:[Redacted]/ Rev.:1.3310.0/ FRU:true
+      Type:000A0002/ Manuf.:CHCNY/ Model:P38995-B21/ SN:[Redacted]/ Rev.:2.01/ FRU:true
+      Type:000A0002/ Manuf.:CHCNY/ Model:P38995-B21/ SN:[Redacted]/ Rev.:2.01/ FRU:true
+      Type:00070002/ Manuf.:HPE/ Model:VO003840RZWUT/ SN:[Redacted]/ Rev.:HPD0/ FRU:true
+      Type:00070002/ Manuf.:HPE/ Model:VO003840RZWUT/ SN:[Redacted] / Rev.:HPD0/ FRU:true
+      Type:00020016/ Manuf.:HPE/ Model:ProLiant DL320 Gen11/ SN:[Redacted]/ Rev.:-/ FRU:false
+      Type:00030003/ Manuf.:HPE/ Model:P48995-001/ SN:[Redacted]/ Rev.:-/ FRU:false
+      Type:00050003/ Manuf.:HPE/ Model:P47785-B21/ SN:[Redacted]/ Rev.:52.22.3-4650/ FRU:true
 
-  PCVT version uses Maven tool in order to be compiled.
-  First execute the prepare-env.sh bash script in order to prepare the environment 
-    to compile the binaries.
+      Verifying platform certificate...
+      Platform Certificate Holder matches the TPM EK certificate.
+      - root/PlatformCertificate signature and chain VERIFIED.
+      - root/SystemIAKCertificate VERIFIED.
+      - root/SystemIDevIDCertificate VERIFIED.
 
-  Three dependencies are being locally copied to the lib directory under the pcvt 
-    repository folder. Please manually copy them to the respective Maven repository 
-    directories such as ~/.m2/repository/HIRS_Structs/, ~/.m2/repository/HIRS_Utils/
-    and  ~/.m2/repository/paccor/. In case another location is being used as the 
-    Maven repository, please redirect the file copies there.
+      Validating hardware manifest against certificate...
+      No changes detected between Platform Certificate and hardware manifest.
 
-  Compile the source code with the command below:
-    mvn clean compile assembly:single
-
-  The file build/pcvt-mvn-0.0.1-jar-with-dependencies.jar will be generated.
-  Under the same directory, please make sure to compile the content under the
-    diskscan folder at this repository, generating the libdiskscan.so library
-    that should be visible under LD_LIBRARY_PATH when executing the PCVT jar.
-
-
-
-PCVT usage:
-
-  First of all it is necessary to download the Platform Certificate, the System 
-IDevID Certificate and the System IAK Certificate from iLO. This can be achieved
-by doing a GET request to the iLO API endpoint below filtering for the fields 
-"PlatformCert", "SystemIDevID" and "SystemIAKCert". The same process can be done
-through the ilorest tool.
-
-  https://<iLO IP Address>/redfish/v1/managers/1/diagnostics/
-
-  After retrieving the content mentioned above and saving them to files (e.g.:
-     /opt/hpe/scl/certificates/signedPlatCert, 
-     /opt/hpe/scl/certificates/iakCert 
-     /opt/hpe/scl/certificates/idevidCert), 
-
-  Please run the PCVT tool for generate the Hardware Manifest of the current state of your device:
-
-    mkdir -p /opt/hpe/scl/certificates
-
-    cp /sys/firmware/efi/efivars/HpePlatformCertificate-b250b9d5-40e6-b2bb-af7c-4f9e95a15b31 /opt/hpe/scl/HpePlatformCertificateSCLdata
-
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:<path where the libdiskscan.so is located> ; \n
-    java -jar target/pcvt-mvn-0.0.1-jar-with-dependencies.jar \n
-    -genhwmanif -scl /opt/hpe/scl/HpePlatformCertificateSCLdata \n
-    -o /opt/hpe/scl/HpePlatformCertificateSCLdata.json 
-  
-  Finally, run the PCVT tool to verify the Platform Components within the 
-  Platform Certificate (signedPlatCert file) against the Hardware Manifest 
-  (HpePlatformCertificateSCLdata.json file). This process will:
-         b) Verify the Platform Certificate signature against the leaf certificate of the Trust Chain.
-         c) Verify the Platform Certificate Trust Chain Status up to the Root CA Certificate.
-         d) Verify the signature and the Trust Chain for the IAK Certificate.
-         e) Verify the signature and the Trust Chain for the IDevID Certificate.
-        
-
-    java -jar build/pcvt-mvn-0.0.1-jar-with-dependencies.jar \n
-    -checkplatcert -hwmanif /opt/hpe/scl/HpePlatformCertificateSCLdata.json \n
-    -spc /opt/hpe/scl/certificates/signedPlatCert \n
-    -iakcert /opt/hpe/scl/certificates/iakCert \n
-    -idevidcert /opt/hpe/scl/certificates/idevidCert
-
-  Below you can find the expected output execution for the PCVT check.  
-
-                Reading Signed Platform Trust Chain certificates
-                Adding Cert with alias: CN=HPE Platform CM00 CA A2P01,OU=Compute Devices,O=Hewlett Packard Enterprise Development,ST=Texas,C=US
-                Adding Cert with alias: CN=HPE Platform Policy CA A1P01,OU=Compute Devices,O=Hewlett Packard Enterprise Development,ST=Texas,C=US
-                Adding Cert with alias: CN=HPE Device Identity Root CA A0001,OU=Compute Devices,O=Hewlett Packard Enterprise Development,ST=Texas,C=US
-                Reading IAK Trust Chain certificates
-                Adding Cert with alias: CN=HPE Device Intermediate CM00 CA A2D01,OU=Compute Devices,O=Hewlett Packard Enterprise Development,ST=Texas,C=US
-                Adding Cert with alias: CN=HPE Device Policy CA A1D01,OU=Compute Devices,O=Hewlett Packard Enterprise Development,ST=Texas,C=US
-                Adding Cert with alias: CN=HPE Device Identity Root CA A0001,OU=Compute Devices,O=Hewlett Packard Enterprise Development,ST=Texas,C=US
-                Reading IDevID Trust Chain certificates
-                Adding Cert with alias: CN=HPE Device Intermediate CM00 CA A2D01,OU=Compute Devices,O=Hewlett Packard Enterprise Development,ST=Texas,C=US
-                Adding Cert with alias: CN=HPE Device Policy CA A1D01,OU=Compute Devices,O=Hewlett Packard Enterprise Development,ST=Texas,C=US
-                Adding Cert with alias: CN=HPE Device Identity Root CA A0001,OU=Compute Devices,O=Hewlett Packard Enterprise Development,ST=Texas,C=US
-
-                PlatformManufacturerStr field in Platform Credential matches a related field in the DeviceInfoReport (HPE)
-                PlatformModel field in Platform Credential matches a related field in the DeviceInfoReport (ProLiant DL380 Gen10 Plus)
-                PlatformVersion field in Platform Credential matches a related field in the DeviceInfoReport ()
-                PlatformSerial field in Platform Credential matches a related field in the DeviceInfoReport (2M212100CR)
-                Number of properties found at the Platform Certificate: 6
-                
-                 **** RESULTS ****
-                
-                 **** Platform Components Verification Status: ****
-                The platform components are VALID
-                
-                 **** Platform Certificate Trust Chain Status: ****
-                The Platform Certificate Trust Chain is VALID
-                
-                 **** Platform Certificate Signature Status: ****
-                The Platform Certificate signature is VALID
-                
-                 **** IAK Certificate Trust Chain Status: ****
-                The IAK Certificate Chain and signature are VALID
-                
-                 **** IDevID Certificate Trust Chain Status: ****
-                The IDevID Certificate Chain and signature are VALID
-                
-                *** No further options selected, exiting. ***
 
