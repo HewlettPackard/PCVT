@@ -26,7 +26,6 @@ Follow the steps in this section to run PCVT using a bootable ISO:
 2. Verify the hash digest of the downloaded ISO image against the corresponding hash digest value provided for each release.
 
 ```
-NOTICE
 To prevent changes to the HPE server that you plan to test,
 HPE recommends that you download the bootable ISO from a different computer.
 ```
@@ -39,7 +38,10 @@ HPE recommends that you download the bootable ISO from a different computer.
  - Boot the HPE server to the ISO image. After the Linux operating system on the ISO image loads, PCVT runs automatically.
 
 ```
-If iLO requires authentication, a user prompt will be displayed for iLO account credentials. Please provide the username and password for an iLO account configured on the server to allow the tool to discover the current hardware and firmware configuration of the server. If running PCVT on a newly-unboxed server, the default iLO credentials will be provided with the server packaging.
+If iLO requires authentication, a user prompt will be displayed for iLO account credentials.
+Please provide the username and password for an iLO account configured on the server to allow
+the tool to discover the current hardware and firmware configuration of the server. If running
+PCVT on a newly-unboxed server, the default iLO credentials will be provided with the server packaging.
 ```
 
 Below you can find sample output from a successful execution of PCVT:
