@@ -1,11 +1,12 @@
 # Platform Certificate Verification Tool (PCVT):
 
-PCVT allows you to verify that the hardware and platform firmware configuration of your Hewlett Packard Enterprise server has not been modified since leaving the factory.
+PCVT enables a user to verify the assertions encoded in the Platform Certificate issued by HPE for a specific system
+are still valid at the time of check.
 
-PCVT performs the following operations:
+Specifically, PCVT performs the following operations:
 
-  1) PCVT verifies the current hardware and relevant firmware configuration of the server
-     against the information encoded in the Platform Certificate that HPE issued at its factory.
+  1) PCVT checks whether the current hardware and relevant firmware configuration of the server
+     is the same as the one encoded in the Platform Certificate that HPE issued at the factory.
      The Platform Certificate is an X.509 Attribute Certificate signed by HPE.
 
   2) PCVT cryptographically verifies the validity of the HPE-issued system certificates:
@@ -18,7 +19,7 @@ The PCVT is available as a bootable ISO image. The PCVT ISO is available on the 
 ## PCVT documentation
 For more information on PCVT and its operation, please refer to the User Guide document that accompanies the ISO image for each release.
 
-## PCVT usage:
+## PCVT usage
 Follow the steps in this section to run PCVT using a bootable ISO:
 
 1. Download the PCVT bootable ISO from the 'Releases' section of this GitHub repository.
@@ -50,9 +51,7 @@ Below you can find sample output from a successful execution of PCVT:
       localhost login: root (automatic login)
       Have a lot of fun ...
       Setting up PCVT environment .. .
-      iLO requires authentication - please provide iLO account credentials:
-      Username:
-      Password:
+
       Reading Platform Certificate
       Reading System IAK Certificate
       Reading System IDevID Certificate
