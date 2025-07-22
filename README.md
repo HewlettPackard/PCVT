@@ -80,11 +80,17 @@ Below you can find sample output from a successful execution of PCVT:
 
       Verifying platform certificate...
       Platform Certificate Holder matches the TPM EK certificate.
-      - root/PlatformCertificate signature and chain VERIFIED.
-      - root/SystemIAKCertificate VERIFIED.
-      - root/SystemIDevIDCertificate VERIFIED.
 
       Validating hardware manifest against certificate...
       No changes detected between Platform Certificate and hardware manifest.
+
+      ---------------------
+      Verification results:
+      ---------------------
+      Platform Certificate : VERIFIED
+      IAK Certificate      : VERIFIED
+      IDevID Certificate   : VERIFIED
+      Platform Components  : VERIFIED
+
 
 
