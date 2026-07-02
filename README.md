@@ -1,3 +1,5 @@
+
+
 # Platform Certificate Verification Tool (PCVT):
 
 PCVT enables a user to verify the assertions encoded in the Platform Certificate issued by HPE for a specific system
@@ -13,8 +15,13 @@ Specifically, PCVT performs the following operations:
     Platform Certificate, System IDevID Certificate and System IAK Certificate, and their
     trust chains.
 
+HPE root certificates are included both on the ISO and as a separate ZIP for use outside of the PCVT environment.
+
 ## PCVT delivery options
-The PCVT is available as a bootable ISO image. The PCVT ISO is available on the 'Releases' section of this GitHub repository.
+The PCVT is available as a bootable ISO image. The PCVT ISO is available on the 'Releases' section of this GitHub repository.  
+HPE only provides x64 Linux versions of this media - but other signed binaries are available on the ISO under /usr/share/pcvt/.
+
+Per the licensing terms of the underlaying OS, source code is provided for the Linux packages in this same repository.
 
 ## PCVT documentation
 For more information on PCVT and its operation, please refer to the User Guide document that accompanies the ISO image for each release.
@@ -23,8 +30,7 @@ For more information on PCVT and its operation, please refer to the User Guide d
 Follow the steps in this section to run PCVT using a bootable ISO:
 
 1. Download the PCVT bootable ISO from the 'Releases' section of this GitHub repository.
-
-2. Verify the hash digest of the downloaded ISO image against the corresponding hash digest value provided for each release.
+2. Verify the cosign signature of the downloaded ISO image against the corresponding bundle provided for each release.
 
 ```
 To prevent changes to the HPE server that you plan to test,
@@ -49,7 +55,6 @@ Below you can find sample output from a successful execution of PCVT:
 
 
       localhost login: root (automatic login)
-      Have a lot of fun ...
       Setting up PCVT environment .. .
 
       Reading Platform Certificate
@@ -93,4 +98,9 @@ Below you can find sample output from a successful execution of PCVT:
       Platform Components  : VERIFIED
 
 
+## Change Log
 
+2.0 - upgrade media to Debian Trixie, move source distribution to this repo, switch to using cosign for signing
+
+
+Copyright (c) Hewlett Packard Enterprise Development LP 2020-2026
